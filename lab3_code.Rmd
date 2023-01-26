@@ -1,0 +1,42 @@
+---
+title: "Lab 3 - binomial logistic regression"
+author: "Max Settineri"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r setup, include = TRUE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(tidymodels)
+library(palmerpenguins)
+library(GGally)
+library(jtools)
+library(AICcmodavg)
+```
+
+# pseudocode
+
+* Examine our data (plots, tables, summary stats)
+* Identify a question
+* Wrangle data
+* Identify candidate models
+* Select among candidate models usin AIC/BIC
+* Select among candidate models using kfold cross validation
+* Select among candidate models using area under receiver operating characteristic curve
+
+```{r}
+# exploratory plots
+GGally::ggpairs(penguins %>% select(species, bill_length_mm:sex),
+                aes(color = species))
+```
+
+```{r}
+class(penguins$species) # checking class
+levels(penguins$species) # checkinbg levels of factor
+
+adelle_chinstrap <- penguins %>% 
+  filter(species %in% c('Adelle', 'Chinstrap'))
+```
+
