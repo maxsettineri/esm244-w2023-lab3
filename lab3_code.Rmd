@@ -68,3 +68,55 @@ summary(ad_chin_blr1)
 blr1_tidy <- tidy(ad_chin_blr1) # makes nice table
 ```
 
+```{r}
+ggplot(data = adelle_chinstrap, aes(x = species, y = flipper_length_mm)) +
+  geom_jitter(aes(color = sex))
+```
+
+```{r}
+blr1_fitted <- ad_chin_blr1 %>% 
+  broom::augment(type.predict = 'response')
+
+ggplot(data = blr1_fitted, aes(x = flipper_length_mm, y = .fitted)) +
+  geom_point(aes(color = sex, shape = species)) +
+  geom_smooth(aes(color = sex, se = FALSE)) +
+  labs(x = 'Flipper length (mm)',
+   	   y = "Probability of outcome Chinstrap")
+```
+
+## Predictions for new values with predict()
+
+```{r}
+ex1 <- predict(ad_chin_blr1,
+               data.frame(sex = 'female',
+                          body_mass_g = 3410,
+                          flipper_length_mm = 192),
+               type = 'response')
+
+new_df <- data.frame(
+  sex = c('male', 'female', 'female'),
+  body_mass_g = c(3298, 4100, 3600),
+  flipper_length_mm = c(212, 175, 180)
+)
+
+ex2 <- predict(ad_chin_blr1, new_df, type = 'response')
+ex2
+```
+
+## Create a new binary logistic model
+
+```{r}
+f2 <- species ~ bill_length_mm + body_mass_g
+
+ad_chin_blr2 <- glm(formula = f2, data = adelle_chinstrap, family = 'binomial')
+
+ad_chin_blr2
+summary(ad_chin_blr2)
+blr2_tidy <- tidy(ad_chin_blr2)
+```
+
+```{r}
+ggplot(adelle_chinstrap, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point(aes(color = species))
+```
+
