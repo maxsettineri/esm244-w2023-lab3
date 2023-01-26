@@ -16,7 +16,7 @@ library(jtools)
 library(AICcmodavg)
 ```
 
-# pseudocode
+## pseudocode
 
 * Examine our data (plots, tables, summary stats)
 * Identify a question
@@ -37,6 +37,34 @@ class(penguins$species) # checking class
 levels(penguins$species) # checkinbg levels of factor
 
 adelle_chinstrap <- penguins %>% 
-  filter(species %in% c('Adelle', 'Chinstrap'))
+  filter(species %in% c('Adelie', 'Chinstrap')) %>% 
+  mutate(species = fct_drop(species)) %>% # dropping levels that no longer exist in species column
+  select(-year) %>% # dropping year
+  drop_na()
+```
+
+## Looking at trends accross variables
+
+```{r}
+ggplot(data = adelle_chinstrap, aes(x = body_mass_g, y = flipper_length_mm)) +
+  geom_point(aes(color = sex, shape = island)) +
+  facet_wrap(~species)
+
+ggplot(data = adelle_chinstrap, aes(x = body_mass_g, y = bill_length_mm)) +
+  geom_point(aes(color = sex, shape = island)) +
+  facet_wrap(~species)
+```
+
+## Binary logistic regression
+
+```{r}
+f1 <- species ~ body_mass_g + flipper_length_mm + sex
+
+ad_chin_blr1 <- glm(formula = f1, data = adelle_chinstrap, family = 'binomial')
+
+ad_chin_blr1
+summary(ad_chin_blr1)
+
+blr1_tidy <- tidy(ad_chin_blr1) # makes nice table
 ```
 
