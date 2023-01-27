@@ -172,12 +172,103 @@ calc_fold <- function(i, fold_df, f) {
   
   kfold_pred <- kfold_test %>% 
     mutate(blr = predict(kfold_blr, kfold_test, type = 'response'),
-           pred = ifelse(blr > 0.50, 'Chinstrap', 'Adelle'))
+           pred = ifelse(blr > 0.50, 'Chinstrap', 'Adelie'))
   
   kfold_accuracy <- kfold_pred %>% 
     summarize(blr_acc = pred_acc(species, pred))
   
   return(kfold_accuracy)
 }
+```
+
+```{r}
+results1_purrr_df <- purrr::map(.x = 1:n_folds,
+                                .f = calc_fold,
+                                fold_df = ad_chin_kfold,
+                                f = f1) %>% 
+  bind_rows() %>% 
+  mutate(mdl = 'f1')
+
+results2_purrr_df <- purrr::map(.x = 1:n_folds,
+                                .f = calc_fold,
+                                fold_df = ad_chin_kfold,
+                                f = f2) %>% 
+  bind_rows() %>% 
+  mutate(mdl = 'f2')
+
+results_purrr_df <- bind_rows(results1_purrr_df, results2_purrr_df) %>% 
+  group_by(mdl) %>% 
+  summarize(mean_acc = mean(blr_acc))
+```
+
+## Tidymodels version
+
+```{r}
+# define model type 
+blr_model <- logistic_reg() %>% 
+  set_engine('glm')
+
+# set a basic regression
+blr_tidyfit_f1 <- blr_model %>% 
+  fit(f1, data = adelle_chinstrap)
+
+blr_tidyfit_f2 <- blr_model %>% 
+  fit(f2, data = adelle_chinstrap)
+
+blr_tidyfit_f1
+blr_tidyfit_f2
+
+blr_tidyfit_f1 %>% 
+  tidy()
+blr_tidyfit_f2 %>% 
+  glance()
+```
+
+### Tidy kfold cross validation
+
+```{r}
+set.seed(345)
+
+tidy_folds <- vfold_cv(adelle_chinstrap, v = 10)
+
+# use workflow to bundle model and formula
+
+blr_tidy_wf1 <- workflow() %>% 
+  add_model(blr_model) %>% 
+  add_formula(f1)
+
+blr_tidy_cv_f1 <- blr_tidy_wf1 %>% 
+  fit_resamples(tidy_folds)
+
+collect_metrics(blr_tidy_cv_f1)
+
+blr_tidy_wf2 <- workflow() %>% 
+  add_model(blr_model) %>% 
+  add_formula(f2)
+
+blr_tidy_cv_f2 <- blr_tidy_wf2 %>% 
+  fit_resamples(tidy_folds)
+
+collect_metrics(blr_tidy_cv_f2)
+```
+
+## Area under the curve
+
+```{r}
+blr_f1_pred <- adelle_chinstrap %>% 
+  mutate(predict(blr_tidyfit_f1, .)) %>% 
+  mutate(predict(blr_tidyfit_f1, ., type = 'prob'))
+
+blr_f1_pred %>% 
+  roc_curve(truth = species, .pred_Adelie) %>% 
+  autoplot()
+
+blr_f2_pred <- adelle_chinstrap %>% 
+  mutate(predict(blr_tidyfit_f2, .)) %>% 
+  mutate(predict(blr_tidyfit_f2, ., type = 'prob'))
+
+blr_f2_pred %>% 
+  roc_curve(truth = species, .pred_Adelie) %>% 
+  autoplot()
 ```
 
