@@ -120,3 +120,64 @@ ggplot(adelle_chinstrap, aes(x = bill_length_mm, y = body_mass_g)) +
   geom_point(aes(color = species))
 ```
 
+## Model Selection
+
+```{r}
+AICcmodavg::aictab(list(ad_chin_blr1, ad_chin_blr2))
+AICcmodavg::bictab(list(ad_chin_blr1, ad_chin_blr2))
+```
+
+10-fold cross validation
+```{r}
+set.seed(123)
+
+n_folds <- 10
+fold_vec <- rep(1:n_folds, length.out = nrow(adelle_chinstrap))
+
+ad_chin_kfold <- adelle_chinstrap %>% 
+  mutate(fold = sample(fold_vec, size = n(), replace = FALSE))
+```
+
+purrr::map()
+
+```{r}
+x_vec <- 1:10
+thing <- purrr::map(.x = x_vec, # a sequence
+                   .f = sqrt)  # a function
+thing
+
+my_funct <- function(x, y, z) {
+  return((x - y)^z)
+}
+thing2 <- purrr::map(.x = x_vec,
+                     .f = my_funct,
+                     y = 2, z = 3)
+thing2
+```
+
+```{r}
+pred_acc <- function(x, y) {
+  accurate <- ifelse(x == y, 1, 0)
+  
+  return(mean(accurate, na.rm = TRUE))
+}
+
+calc_fold <- function(i, fold_df, f) {
+  kfold_test <- fold_df %>% 
+    filter(fold == i)
+  kfold_train <- fold_df %>% 
+    filter(fold != i)
+  
+  kfold_blr <- glm(f, data = kfold_train, family = 'binomial')
+  
+  kfold_pred <- kfold_test %>% 
+    mutate(blr = predict(kfold_blr, kfold_test, type = 'response'),
+           pred = ifelse(blr > 0.50, 'Chinstrap', 'Adelle'))
+  
+  kfold_accuracy <- kfold_pred %>% 
+    summarize(blr_acc = pred_acc(species, pred))
+  
+  return(kfold_accuracy)
+}
+```
+
